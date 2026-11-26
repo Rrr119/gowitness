@@ -71,6 +71,17 @@
   <main class="container">
     <h1>Gowitness Results</h1>
 
+    {{if .ClusterReport}}
+    <p class="cluster-summary">
+      <strong>Clustering:</strong>
+      {{.ClusterReport.CanonicalResults}} canonical / {{.ClusterReport.TotalResults}} total,
+      {{.ClusterReport.DuplicatesMerged}} screenshot duplicates merged,
+      {{len .ClusterReport.FaviconClusters}} favicon groups,
+      {{len .ClusterReport.TitleClusters}} title groups,
+      {{len .ClusterReport.CombinedClusters}} favicon+title groups.
+    </p>
+    {{end}}
+
     <!-- Flexbox container for the toggle button and filter input -->
     <div class="controls">
       <!-- Toggle button -->
@@ -103,7 +114,14 @@
           <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a></td>
           <td>{{.Title}}</td>
           <td class="{{statusClass .ResponseCode}}">{{.ResponseCode}}</td>
-          <td>{{.PerceptionHashGroupId}}</td>
+          <td>
+            {{if .PerceptionHashGroupId}}<span title="Screenshot similarity group">S{{.PerceptionHashGroupId}}</span>{{end}}
+            {{if .FaviconClusterID}} <span title="Favicon group">F{{.FaviconClusterID}}</span>{{end}}
+            {{if .TitleClusterID}} <span title="Normalised title group">T{{.TitleClusterID}}</span>{{end}}
+            {{if .ClusterID}} <span title="Favicon and title group">C{{.ClusterID}}</span>{{end}}
+            {{if .IsDuplicate}}<br><small>duplicate of {{.CanonicalURL}}</small>{{end}}
+            {{if .DuplicateCount}}<br><small>{{.DuplicateCount}} merged duplicate{{if gt .DuplicateCount 1}}s{{end}}</small>{{end}}
+          </td>
           <td>{{if .Failed}}Yes{{else}}{{end}}</td>
         </tr>
         {{end}}

@@ -19,15 +19,27 @@ type galleryResponse struct {
 }
 
 type galleryContent struct {
-	ID           uint      `json:"id"`
-	ProbedAt     time.Time `json:"probed_at"`
-	URL          string    `json:"url"`
-	ResponseCode int       `json:"response_code"`
-	Title        string    `json:"title"`
-	Filename     string    `json:"file_name"`
-	Screenshot   string    `json:"screenshot"`
-	Failed       bool      `json:"failed"`
-	Technologies []string  `json:"technologies"`
+	ID                    uint      `json:"id"`
+	ProbedAt              time.Time `json:"probed_at"`
+	URL                   string    `json:"url"`
+	ResponseCode          int       `json:"response_code"`
+	Title                 string    `json:"title"`
+	Filename              string    `json:"file_name"`
+	Screenshot            string    `json:"screenshot"`
+	Failed                bool      `json:"failed"`
+	Technologies          []string  `json:"technologies"`
+	PerceptionHash        string    `json:"perception_hash,omitempty"`
+	PerceptionHashGroupID uint      `json:"perception_hash_group_id,omitempty"`
+	Favicon               string    `json:"favicon,omitempty"`
+	FaviconHash           string    `json:"favicon_hash,omitempty"`
+	TitleNormalized       string    `json:"title_normalized,omitempty"`
+	ScreenshotClusterID   uint      `json:"screenshot_cluster_id,omitempty"`
+	FaviconClusterID      uint      `json:"favicon_cluster_id,omitempty"`
+	TitleClusterID        uint      `json:"title_cluster_id,omitempty"`
+	ClusterID             uint      `json:"cluster_id,omitempty"`
+	IsDuplicate           bool      `json:"is_duplicate,omitempty"`
+	DuplicateCount        int       `json:"duplicate_count,omitempty"`
+	CanonicalURL          string    `json:"canonical_url,omitempty"`
 }
 
 // GalleryHandler gets a paginated gallery
@@ -136,15 +148,27 @@ func (h *ApiHandler) GalleryHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Append the processed data to the response
 		results.Results = append(results.Results, &galleryContent{
-			ID:           result.ID,
-			ProbedAt:     result.ProbedAt,
-			URL:          result.URL,
-			ResponseCode: result.ResponseCode,
-			Title:        result.Title,
-			Filename:     result.Filename,
-			Screenshot:   result.Screenshot,
-			Failed:       result.Failed,
-			Technologies: technologies,
+			ID:                    result.ID,
+			ProbedAt:              result.ProbedAt,
+			URL:                   result.URL,
+			ResponseCode:          result.ResponseCode,
+			Title:                 result.Title,
+			Filename:              result.Filename,
+			Screenshot:            result.Screenshot,
+			Failed:                result.Failed,
+			Technologies:          technologies,
+			PerceptionHash:        result.PerceptionHash,
+			PerceptionHashGroupID: result.PerceptionHashGroupId,
+			Favicon:               result.Favicon,
+			FaviconHash:           result.FaviconHash,
+			TitleNormalized:       result.TitleNormalized,
+			ScreenshotClusterID:   result.ScreenshotClusterID,
+			FaviconClusterID:      result.FaviconClusterID,
+			TitleClusterID:        result.TitleClusterID,
+			ClusterID:             result.ClusterID,
+			IsDuplicate:           result.IsDuplicate,
+			DuplicateCount:        result.DuplicateCount,
+			CanonicalURL:          result.CanonicalURL,
 		})
 	}
 

@@ -66,6 +66,9 @@ func (cw *CsvWriter) Write(result *models.Result) error {
 		if islazy.SliceHasStr(csvExludedFields, val.Type().Field(i).Name) {
 			continue
 		}
+		if val.Type().Field(i).Tag.Get("json") == "-" {
+			continue
+		}
 
 		// skip slices
 		if val.Field(i).Kind() == reflect.Slice {
@@ -87,6 +90,9 @@ func csvHeaders() []string {
 	for i := 0; i < numField; i++ {
 		// skip excluded fields
 		if islazy.SliceHasStr(csvExludedFields, val.Type().Field(i).Name) {
+			continue
+		}
+		if val.Type().Field(i).Tag.Get("json") == "-" {
 			continue
 		}
 

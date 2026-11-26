@@ -10,6 +10,7 @@ import (
 
 	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 	"github.com/sensepost/gowitness/internal/islazy"
+	"github.com/sensepost/gowitness/pkg/clustering"
 	"github.com/sensepost/gowitness/pkg/models"
 	"github.com/sensepost/gowitness/pkg/writers"
 )
@@ -87,6 +88,10 @@ func NewRunner(logger *slog.Logger, driver Driver, opts Options, writers []write
 
 // runWriters takes a result and passes it to writers
 func (run *Runner) runWriters(result *models.Result) error {
+	// Cheap offline normalisation and favicon discovery from already
+	// collected HTML. This deliberately performs no network I/O.
+	clustering.EnrichResult(result)
+
 	for _, writer := range run.writers {
 		if err := writer.Write(result); err != nil {
 			return err

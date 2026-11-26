@@ -24,6 +24,7 @@ The main goal of `gowitness` is to take website screenshots (**and do that well!
 - Scan a list of URLs, CIDRs, Nmap Results, Nessus Results and more.
 - Ability to grab and save data (i.e., a request log, console logs, headers, cookies, etc.)
 - Write data to many formats (sqlite database, jsonlines, csv, etc.)
+- Merge repeated screenshots and cluster results by favicon and title.
 - An epic web-based results viewer (if you saved data to SQLite) including a fully featured API!
 - And many, many more!
 
@@ -42,6 +43,24 @@ gowitness scan single --url "https://sensepost.com" --write-db
 ```
 
 There are many, *many* flags and scan types in `gowitness`. Just add `-h` anywhere and read all about it!
+
+## deduplication and clustering
+
+Clustering is an offline report operation, so it does not add favicon fetches or
+pairwise image work to the scan path. After a batch scan, run:
+
+```text
+gowitness report cluster --json-file gowitness.jsonl
+# or: gowitness dedupe gowitness.jsonl merged.jsonl
+```
+
+This writes `gowitness-clusters.json` with screenshot, favicon, title and
+combined favicon+title groups, plus `gowitness-dedup.jsonl` containing one
+compatible result per screenshot group. Canonical rows include
+`duplicate_count` and `duplicate_urls`; SQLite reports are annotated in place.
+Use `--threshold` to tune inclusive pHash Hamming distance and
+`report generate --merge-duplicates` for a static report containing only
+canonical screenshots.
 
 ## documentation
 

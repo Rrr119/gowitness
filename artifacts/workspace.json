@@ -1,0 +1,17 @@
+{
+  "root": "/home/dev/feedback/uid38811",
+  "B": "/home/dev/feedback/uid38811",
+  "sha": "6f9a0931cf0cee56e749efc14aa9fb52c7d19e6a",
+  "wslDistro": "Ubuntu-26.04",
+  "source": {
+    "owner": "sensepost",
+    "repo": "gowitness",
+    "sha": "6f9a0931cf0cee56e749efc14aa9fb52c7d19e6a"
+  },
+  "fork": {
+    "owner": "Rrr119",
+    "repo": "gowitness",
+    "cloneUrl": "https://github.com/Rrr119/gowitness.git"
+  },
+  "at": "2026-11-26T02:40:40.522Z"
+}

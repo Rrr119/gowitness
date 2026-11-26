@@ -44,6 +44,74 @@ type Result struct {
 	Network []NetworkLog `json:"network" gorm:"constraint:OnDelete:CASCADE"`
 	Console []ConsoleLog `json:"console" gorm:"constraint:OnDelete:CASCADE"`
 	Cookies []Cookie     `json:"cookies" gorm:"constraint:OnDelete:CASCADE"`
+
+	// Additive clustering and deduplication metadata. These fields are
+	// intentionally optional so older JSON Lines, CSV and database reports
+	// remain readable.
+	Favicon             string   `json:"favicon,omitempty"`
+	FaviconURL          string   `json:"favicon_url,omitempty"`
+	FaviconHash         string   `json:"favicon_hash,omitempty" gorm:"index"`
+	ScreenshotHash      string   `json:"screenshot_hash,omitempty" gorm:"index"`
+	TitleNormalized     string   `json:"title_normalized,omitempty" gorm:"index:,length:191"`
+	ScreenshotClusterID uint     `json:"screenshot_cluster_id,omitempty" gorm:"index"`
+	ClusterID           uint     `json:"cluster_id,omitempty" gorm:"index"`
+	FaviconClusterID    uint     `json:"favicon_cluster_id,omitempty" gorm:"index"`
+	TitleClusterID      uint     `json:"title_cluster_id,omitempty" gorm:"index"`
+	DuplicateOfID       uint     `json:"duplicate_of_id,omitempty" gorm:"index"`
+	CanonicalURL        string   `json:"canonical_url,omitempty"`
+	IsDuplicate         bool     `json:"is_duplicate,omitempty" gorm:"index"`
+	DuplicateCount      int      `json:"duplicate_count,omitempty"`
+	DuplicateURLs       []string `json:"duplicate_urls,omitempty" gorm:"serializer:json"`
+
+	// Compatibility aliases for codebases/tests using the repository's
+	// older "Id" capitalisation. They are not serialised or migrated.
+	ScreenshotClusterId uint `json:"-" gorm:"-"`
+	ClusterId           uint `json:"-" gorm:"-"`
+	FaviconClusterId    uint `json:"-" gorm:"-"`
+	TitleClusterId      uint `json:"-" gorm:"-"`
+	DuplicateOfId       uint `json:"-" gorm:"-"`
+}
+
+// SyncClusterAliases keeps the exported ID/Id spelling variants aligned.
+func (r *Result) SyncClusterAliases() {
+	if r == nil {
+		return
+	}
+
+	if r.ScreenshotClusterID == 0 && r.ScreenshotClusterId != 0 {
+		r.ScreenshotClusterID = r.ScreenshotClusterId
+	}
+	if r.ScreenshotClusterId == 0 && r.ScreenshotClusterID != 0 {
+		r.ScreenshotClusterId = r.ScreenshotClusterID
+	}
+
+	if r.ClusterID == 0 && r.ClusterId != 0 {
+		r.ClusterID = r.ClusterId
+	}
+	if r.ClusterId == 0 && r.ClusterID != 0 {
+		r.ClusterId = r.ClusterID
+	}
+
+	if r.FaviconClusterID == 0 && r.FaviconClusterId != 0 {
+		r.FaviconClusterID = r.FaviconClusterId
+	}
+	if r.FaviconClusterId == 0 && r.FaviconClusterID != 0 {
+		r.FaviconClusterId = r.FaviconClusterID
+	}
+
+	if r.TitleClusterID == 0 && r.TitleClusterId != 0 {
+		r.TitleClusterID = r.TitleClusterId
+	}
+	if r.TitleClusterId == 0 && r.TitleClusterID != 0 {
+		r.TitleClusterId = r.TitleClusterID
+	}
+
+	if r.DuplicateOfID == 0 && r.DuplicateOfId != 0 {
+		r.DuplicateOfID = r.DuplicateOfId
+	}
+	if r.DuplicateOfId == 0 && r.DuplicateOfID != 0 {
+		r.DuplicateOfId = r.DuplicateOfID
+	}
 }
 
 func (r *Result) HeaderMap() map[string][]string {

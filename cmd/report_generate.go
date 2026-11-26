@@ -12,6 +12,7 @@ import (
 
 	"github.com/sensepost/gowitness/internal/ascii"
 	"github.com/sensepost/gowitness/internal/islazy"
+	"github.com/sensepost/gowitness/pkg/clustering"
 	"github.com/sensepost/gowitness/pkg/database"
 	"github.com/sensepost/gowitness/pkg/log"
 	"github.com/sensepost/gowitness/pkg/models"
@@ -21,10 +22,11 @@ import (
 )
 
 var generateCmdFlags = struct {
-	ReportFile     string
-	ScreenshotPath string
-	DbURI          string
-	JsonFile       string
+	ReportFile      string
+	ScreenshotPath  string
+	DbURI           string
+	JsonFile        string
+	MergeDuplicates bool
 
 	// temp working dir
 	TempDir string
@@ -107,7 +109,7 @@ The output file is a zip archive with an index.html file containing the report.
 			log.Fatal("could not connect to database", "err", err)
 		}
 
-		if err := conn.Model(&models.Result{}).Preload(clause.Associations).Find(&results).Error; err != nil {
+		if err := conn.Model(&models.Result{}).Order("id ASC").Preload(clause.Associations).Find(&results).Error; err != nil {
 			log.Fatal("could not get list", "err", err)
 		}
 
@@ -124,6 +126,7 @@ func init() {
 	generateCmd.Flags().StringVar(&generateCmdFlags.DbURI, "db-uri", "sqlite://gowitness.sqlite3", "The location of a gowitness database. Supports SQLite, MySQL, and PostgreSQL. Examples: sqlite://gowitness.sqlite3, mysql://user:pass@localhost:3306/gowitness, postgres://user:pass@localhost:5432/gowitness")
 	generateCmd.Flags().StringVar(&generateCmdFlags.JsonFile, "json-file", "", "The location of a JSON Lines results file (e.g., ./gowitness.jsonl). This flag takes precedence over --db-uri")
 	generateCmd.Flags().StringVar(&generateCmdFlags.ReportFile, "zip-name", "gowitness-report.zip", "The name and location of the final report ZIP file that will be generated")
+	generateCmd.Flags().BoolVar(&generateCmdFlags.MergeDuplicates, "merge-duplicates", false, "Merge screenshot duplicates in the HTML report and screenshot ZIP entries")
 }
 
 // statusClass returns a CSS class based on the HTTP status code
@@ -145,6 +148,18 @@ func statusClass(responseCode int) string {
 // generateHTML generates an HTML report from results
 func generateHTML(results []models.Result) error {
 	log.Info("generating HTML report for results", "count", len(results))
+
+	clusterReport := clustering.AnalyzeValues(results)
+	if generateCmdFlags.MergeDuplicates {
+		merged := make([]models.Result, 0, clusterReport.CanonicalResults)
+		for _, result := range clusterReport.Canonical {
+			if result != nil {
+				merged = append(merged, *result)
+			}
+		}
+		results = merged
+		log.Info("merged screenshot duplicates for report", "canonical", len(results), "merged", clusterReport.DuplicatesMerged)
+	}
 
 	tmplContent, err := templates.ReportTemplate.ReadFile("static-report.tmpl")
 	if err != nil {
@@ -168,7 +183,8 @@ func generateHTML(results []models.Result) error {
 	defer file.Close()
 
 	err = tmpl.Execute(file, map[string]interface{}{
-		"Results": results,
+		"Results":       results,
+		"ClusterReport": clusterReport,
 	})
 	if err != nil {
 		return err
@@ -178,7 +194,7 @@ func generateHTML(results []models.Result) error {
 
 	// archive the results
 	tempZipPath := filepath.Join(generateCmdFlags.TempDir, "report.zip")
-	err = createZipFile(tempZipPath, []string{htmlOutputPath, cssOutputPath}, generateCmdFlags.ScreenshotPath)
+	err = createZipFile(tempZipPath, []string{htmlOutputPath, cssOutputPath}, generateCmdFlags.ScreenshotPath, results, generateCmdFlags.MergeDuplicates)
 	if err != nil {
 		return err
 	}
@@ -218,7 +234,7 @@ func copyCSS() string {
 }
 
 // createZipFile creates the report zip archive
-func createZipFile(outputZip string, filesToInclude []string, screenshotsDir string) error {
+func createZipFile(outputZip string, filesToInclude []string, screenshotsDir string, results []models.Result, mergeDuplicates bool) error {
 	zipFile, err := os.Create(outputZip)
 	if err != nil {
 		return err
@@ -234,16 +250,26 @@ func createZipFile(outputZip string, filesToInclude []string, screenshotsDir str
 		}
 	}
 
-	if err := addScreenshotsToZip(zipWriter, screenshotsDir); err != nil {
+	var allowedScreenshots map[string]struct{}
+	if mergeDuplicates {
+		allowedScreenshots = make(map[string]struct{}, len(results))
+		for _, result := range results {
+			if result.Filename != "" {
+				allowedScreenshots[result.Filename] = struct{}{}
+			}
+		}
+	}
+
+	if err := addScreenshotsToZip(zipWriter, screenshotsDir, allowedScreenshots); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// addScreenshotsToZip adds all files in the user specified screenshot directory into
-// the ./screenshots/ directory in the zip file.
-func addScreenshotsToZip(zipWriter *zip.Writer, screenshotsDir string) error {
+// addScreenshotsToZip adds files in screenshotDir to ./screenshots/ in the
+// zip. When allowed is non-nil, only matching base file names are included.
+func addScreenshotsToZip(zipWriter *zip.Writer, screenshotsDir string, allowed map[string]struct{}) error {
 	err := filepath.Walk(screenshotsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -251,6 +277,11 @@ func addScreenshotsToZip(zipWriter *zip.Writer, screenshotsDir string) error {
 
 		if info.IsDir() {
 			return nil
+		}
+		if allowed != nil {
+			if _, ok := allowed[filepath.Base(path)]; !ok {
+				return nil
+			}
 		}
 
 		// screenshots always live in ./screenshots for the report

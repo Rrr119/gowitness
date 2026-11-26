@@ -21,6 +21,7 @@ require (
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
 	github.com/ysmood/gson v0.7.3
+	golang.org/x/net v0.59.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.2
 	gorm.io/gorm v1.31.2
@@ -88,7 +89,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
